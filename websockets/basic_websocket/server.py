@@ -17,12 +17,15 @@ def handle_client(conn, addr):
 
     is_connected = True
     while is_connected:
-        msg_length = int(conn.recv(HEADER).decode(FORMAT))
-        msg = conn.recv(msg_length).decode(FORMAT)
-        if msg == DISCONNECT_MSG:
-            is_connected = False
+        msg_length = conn.recv(HEADER).decode(FORMAT)
         
-        print(f'{addr} - {msg}')
+        if msg_length:
+            msg_length = int(msg_length )
+            msg = conn.recv(msg_length).decode(FORMAT)
+            if msg == DISCONNECT_MSG:
+                is_connected = False
+            
+            print(f'{addr} - {msg}')
 
     conn.close() 
 
@@ -31,7 +34,8 @@ def start():
     while True:
         conn, addr = server.accept()
         thread = threading.Thread(target=handle_client, args=(conn, addr))
-        thread.start(f'Active connections: {threading.activeCount() - 1}') # as we always have start fn running, we'll subtract one thread for this. 
+        thread.start()
+        print(f'Active connections: {threading.activeCount() - 1}') # as we always have start fn running, we'll subtract one thread for this. 
 
 print('Server is starting')
 start()
