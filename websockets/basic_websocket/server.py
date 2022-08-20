@@ -1,15 +1,37 @@
-import asyncio
 import imp
-import websockets
-import logging
+import socket
+import threading
 
-logging.basicConfig(level=logging.INFO)
+PORT = 4000
+SERVER = socket.gethostbyname(socket.gethostname())
+ADDR = (SERVER, PORT)
+HEADER = 64
+FORMAT = 'utf-8'
+DISCONNECT_MSG = 'disconnect'
 
-async def consumer_handler(websocket: WebSocketClientProtocol) -> None:
-    async for message in websocket:
-        logging.info(f"message: {message}")
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(ADDR)
 
-async def consume(hostname: str, port: int) -> None:
-    websocket_resource_url = f"ws://{hostname}:{port}"
-    async with websockets.connect(websocket_resource_url) as websocket:
-        await consumer_handler(websocket)
+def handle_client(conn, addr):
+    print(f'{addr} connected')
+
+    is_connected = True
+    while is_connected:
+        msg_length = int(conn.recv(HEADER).decode(FORMAT))
+        msg = conn.recv(msg_length).decode(FORMAT)
+        if msg == DISCONNECT_MSG:
+            is_connected = False
+        
+        print(f'{addr} - {msg}')
+
+    conn.close() 
+
+def start():
+    server.listen()
+    while True:
+        conn, addr = server.accept()
+        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        thread.start(f'Active connections: {threading.activeCount() - 1}') # as we always have start fn running, we'll subtract one thread for this. 
+
+print('Server is starting')
+start()
